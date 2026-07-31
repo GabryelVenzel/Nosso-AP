@@ -117,7 +117,7 @@ perc_moveis = (total_moveis_comprados / total_moveis_meta * 100) if total_moveis
 ALTURA_CARDS = 245 
 
 # 5. ESTRUTURA DE COLUNAS
-left_col, right_col = st.columns([1, 2], gap="large")
+left_col, right_col = st.columns([2, 1], gap="large")
 
 with left_col:
     with st.container(height=ALTURA_CARDS, border=True):
