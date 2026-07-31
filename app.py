@@ -13,8 +13,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # 2. Inicialização do estado (sessão)
-if 'gabryel' not in st.session_state: st.session_state.gabryel = 0.0
-if 'julia' not in st.session_state: st.session_state.julia = 0.0
+if 'Gabryel' not in st.session_state: st.session_state.gabryel = 0.0
+if 'Julia' not in st.session_state: st.session_state.julia = 0.0
 if 'emprestimo_pago' not in st.session_state: st.session_state.emprestimo_pago = 0.0
 
 if 'parcelas' not in st.session_state:
@@ -80,12 +80,15 @@ moveis_comprados_df = st.session_state.moveis[st.session_state.moveis["Comprado"
 total_moveis_comprados = moveis_comprados_df["Valor (R$)"].sum() if not moveis_comprados_df.empty else 0.0
 perc_moveis = (total_moveis_comprados / total_moveis_meta * 100) if total_moveis_meta > 0 else 0.0
 
+# Define a altura fixa para os cards da primeira linha
+ALTURA_CARDS = 245 
+
 # 5. ESTRUTURA DE COLUNAS MESTRE
 left_col, right_col = st.columns([1, 2], gap="large")
 
 with left_col:
-    # 1. MÓVEIS (Progresso movido para cá)
-    with st.container(border=True):
+    # 1. MÓVEIS (Progresso)
+    with st.container(height=ALTURA_CARDS, border=True):
         st.caption(f"META DE MÓVEIS")
         st.metric("Comprados", f"R$ {total_moveis_comprados:,.2f}", f"Meta: R$ {total_moveis_meta:,.2f}", delta_color="off")
         st.progress(int(perc_moveis), text=f"{perc_moveis:.0f}% Adquirido")
@@ -120,16 +123,17 @@ with left_col:
 with right_col:
     # 3. PROGRESSO PARCELAS E SALDO DEVEDOR COMBINADO
     top_r1, top_r2 = st.columns(2)
+    
     with top_r1:
-        with st.container(border=True):
-            st.caption("PARCELAS AP (BLISS + CAIXA)")
+        with st.container(height=ALTURA_CARDS, border=True):
+            st.caption("PARCELAS (BLISS + CAIXA)")
             st.metric("Total Pago", f"R$ {valor_total_pago:,.2f}", f"de R$ {valor_total_geral:,.2f}", delta_color="off")
             st.progress(int(perc_parcelas), text=f"{perc_parcelas:.1f}% Concluído")
             
     with top_r2:
-        # Saldo Devedor e Abater Juntos (Na posição que era dos Móveis)
-        with st.container(border=True):
-            st.caption("SALDO DEVEDOR (20K)")
+        # Saldo Devedor e Abater Juntos
+        with st.container(height=ALTURA_CARDS, border=True):
+            st.caption("EMPRÉSTIMO ENTRADA (20 MIL REAIS)")
             st.metric("Restante", f"R$ {saldo_devedor:,.2f}")
             st.progress(int(perc_devedor), text=f"{perc_devedor:.0f}% Pago")
             
@@ -170,7 +174,7 @@ with right_col:
                     <h1 style="margin: 5px 0; color: #0284c7; font-size: 2.2rem; line-height: 1;">R$ {total_casal:,.2f}</h1>
                     <div>
                         <span style="background-color: #0284c7; color: white; padding: 4px 14px; border-radius: 20px; font-size: 0.95rem; font-weight: bold; display: inline-block; margin-top: 8px;">
-                            {meses_cobertura} meses inteiros
+                            {meses_cobertura} meses seguros
                         </span>
                     </div>
                 </div>
@@ -198,7 +202,7 @@ with right_col:
 
     # 5. CRONOGRAMA CONJUNTO
     with st.container(border=True):
-        st.subheader("Cronograma Conjunto", anchor=False)
+        st.subheader("Cronograma de Pagamentos", anchor=False)
         st.caption("A cobertura de meses na Gestão de Reservas é calculada automaticamente baseada nos valores em aberto desta tabela.")
         display_df = st.session_state.parcelas.drop(columns=['Total_Mes'], errors='ignore')
         
