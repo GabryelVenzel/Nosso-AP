@@ -51,7 +51,7 @@ if 'parcelas' not in st.session_state:
             "Mês/Ano": mes_ano, 
             "Entrada Bliss (R$)": bliss, 
             "Evolução Caixa (R$)": caixa, 
-            "Outros (R$)": 0.0, # <-- NOVA COLUNA ADICIONADA AQUI
+            "Outros (R$)": 0.0, 
             "Paga": False
         })
     st.session_state.parcelas = pd.DataFrame(parcelas_data)
@@ -66,8 +66,14 @@ st.markdown("<h1>Nosso Apartamento 🏢</h1>", unsafe_allow_html=True)
 saldo_devedor = max(0.0, 20000.0 - st.session_state.emprestimo_pago)
 perc_devedor = min(100.0, (st.session_state.emprestimo_pago / 20000.0) * 100) if 20000.0 else 0
 
-# Cálculos Parcelas (Agora somando a coluna 'Outros')
+# Cálculos Parcelas
 df_parcelas = st.session_state.parcelas
+
+# CORREÇÃO DO ERRO KEYERROR: Força a criação da coluna caso o cache tenha a versão velha
+if 'Outros (R$)' not in df_parcelas.columns:
+    df_parcelas['Outros (R$)'] = 0.0
+    st.session_state.parcelas = df_parcelas
+
 df_parcelas['Total_Mes'] = df_parcelas['Entrada Bliss (R$)'] + df_parcelas['Evolução Caixa (R$)'] + df_parcelas['Outros (R$)']
 valor_total_geral = df_parcelas['Total_Mes'].sum()
 
