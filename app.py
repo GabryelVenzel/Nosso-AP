@@ -84,23 +84,13 @@ perc_moveis = (total_moveis_comprados / total_moveis_meta * 100) if total_moveis
 left_col, right_col = st.columns([1, 2], gap="large")
 
 with left_col:
-    # 1. SALDO DEVEDOR
+    # 1. MÓVEIS (Progresso movido para cá)
     with st.container(border=True):
-        st.caption("SALDO DEVEDOR (20K)")
-        st.metric("Restante", f"R$ {saldo_devedor:,.2f}")
-        st.progress(int(perc_devedor), text=f"{perc_devedor:.0f}% Pago")
+        st.caption(f"META DE MÓVEIS")
+        st.metric("Comprados", f"R$ {total_moveis_comprados:,.2f}", f"Meta: R$ {total_moveis_meta:,.2f}", delta_color="off")
+        st.progress(int(perc_moveis), text=f"{perc_moveis:.0f}% Adquirido")
         
-    # 2. ABATER EMPRÉSTIMO
-    with st.container(border=True):
-        st.subheader("Abater Empréstimo", anchor=False)
-        st.caption("Abate dos R$ 20.000,00 iniciais.")
-        ca1, ca2 = st.columns([2, 1])
-        abater = ca1.number_input("Valor pago R$", min_value=0.0, step=100.0, label_visibility="collapsed")
-        if ca2.button("Lançar", use_container_width=True, type="primary"):
-            st.session_state.emprestimo_pago = min(20000.0, st.session_state.emprestimo_pago + abater)
-            st.rerun()
-
-    # 3. LISTA DE MÓVEIS
+    # 2. LISTA DE MÓVEIS
     with st.container(border=True):
         st.subheader("Móveis e Decoração", anchor=False)
         with st.form("form_moveis", border=False):
@@ -128,20 +118,30 @@ with left_col:
                 st.rerun()
 
 with right_col:
-    # 4. PROGRESSO PARCELAS E MÓVEIS (Topo da direita)
+    # 3. PROGRESSO PARCELAS E SALDO DEVEDOR COMBINADO
     top_r1, top_r2 = st.columns(2)
     with top_r1:
         with st.container(border=True):
             st.caption("PARCELAS AP (BLISS + CAIXA)")
             st.metric("Total Pago", f"R$ {valor_total_pago:,.2f}", f"de R$ {valor_total_geral:,.2f}", delta_color="off")
             st.progress(int(perc_parcelas), text=f"{perc_parcelas:.1f}% Concluído")
+            
     with top_r2:
+        # Saldo Devedor e Abater Juntos (Na posição que era dos Móveis)
         with st.container(border=True):
-            st.caption(f"META DE MÓVEIS")
-            st.metric("Comprados", f"R$ {total_moveis_comprados:,.2f}", f"Meta: R$ {total_moveis_meta:,.2f}", delta_color="off")
-            st.progress(int(perc_moveis), text=f"{perc_moveis:.0f}% Adquirido")
+            st.caption("SALDO DEVEDOR (20K)")
+            st.metric("Restante", f"R$ {saldo_devedor:,.2f}")
+            st.progress(int(perc_devedor), text=f"{perc_devedor:.0f}% Pago")
+            
+            st.divider() # Linha divisória fina
+            
+            ca1, ca2 = st.columns([2, 1])
+            abater = ca1.number_input("Abater valor R$", min_value=0.0, step=100.0, label_visibility="collapsed", placeholder="Valor R$")
+            if ca2.button("Lançar", use_container_width=True, type="primary"):
+                st.session_state.emprestimo_pago = min(20000.0, st.session_state.emprestimo_pago + abater)
+                st.rerun()
 
-    # 5. GESTÃO DE RESERVAS (Horizontal e alinhada à tabela)
+    # 4. GESTÃO DE RESERVAS
     with st.container(border=True):
         st.subheader("Gestão de Reservas", anchor=False)
         total_casal = st.session_state.gabryel + st.session_state.julia
@@ -160,16 +160,27 @@ with right_col:
                 break
         
         # Estrutura Horizontal
-        col_res1, col_res2, col_res3 = st.columns([1, 1, 1])
+        col_res1, col_res2, col_res3 = st.columns([1.2, 1, 1], gap="medium")
         
         with col_res1:
-            st.info(f"**Saldo Total:** R$ {total_casal:,.2f}\n\n**Cobertura:** {meses_cobertura} meses")
+            # Destaque customizado para o Saldo e Meses
+            st.markdown(f"""
+                <div style="background-color: rgba(2, 132, 199, 0.1); padding: 20px; border-radius: 12px; text-align: center; border: 1px solid rgba(2, 132, 199, 0.2); height: 100%; display: flex; flex-direction: column; justify-content: center;">
+                    <p style="margin: 0; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; color: #475569;">Saldo Total</p>
+                    <h1 style="margin: 5px 0; color: #0284c7; font-size: 2.2rem; line-height: 1;">R$ {total_casal:,.2f}</h1>
+                    <div>
+                        <span style="background-color: #0284c7; color: white; padding: 4px 14px; border-radius: 20px; font-size: 0.95rem; font-weight: bold; display: inline-block; margin-top: 8px;">
+                            {meses_cobertura} meses inteiros
+                        </span>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
             
         with col_res2:
             st.write("**👦🏻 Gabryel**")
             st.metric("Saldo", f"R$ {st.session_state.gabryel:,.2f}", label_visibility="collapsed")
             cg1, cg2, cg3 = st.columns([2, 1, 1])
-            novo_valor_g = cg1.number_input("Valor", step=100.0, key="in_g", label_visibility="collapsed", placeholder="R$")
+            novo_valor_g = cg1.number_input("Valor Gabryel", step=100.0, key="in_g", label_visibility="collapsed", placeholder="R$")
             if cg2.button("➕", key="add_g", use_container_width=True): 
                 st.session_state.gabryel += novo_valor_g; st.rerun()
             if cg3.button("➖", key="sub_g", use_container_width=True): 
@@ -179,17 +190,16 @@ with right_col:
             st.write("**👸🏻 Júlia**")
             st.metric("Saldo", f"R$ {st.session_state.julia:,.2f}", label_visibility="collapsed")
             cj1, cj2, cj3 = st.columns([2, 1, 1])
-            novo_valor_j = cj1.number_input("Valor", step=100.0, key="in_j", label_visibility="collapsed", placeholder="R$")
+            novo_valor_j = cj1.number_input("Valor Júlia", step=100.0, key="in_j", label_visibility="collapsed", placeholder="R$")
             if cj2.button("➕", key="add_j", use_container_width=True): 
                 st.session_state.julia += novo_valor_j; st.rerun()
             if cj3.button("➖", key="sub_j", use_container_width=True): 
                 st.session_state.julia = max(0.0, st.session_state.julia - novo_valor_j); st.rerun()
 
-    # 6. CRONOGRAMA CONJUNTO (Mesma largura de Gestão de Reservas)
+    # 5. CRONOGRAMA CONJUNTO
     with st.container(border=True):
         st.subheader("Cronograma Conjunto", anchor=False)
         st.caption("A cobertura de meses na Gestão de Reservas é calculada automaticamente baseada nos valores em aberto desta tabela.")
-        # Drop the calculation column before showing to user, it recalculates automatically
         display_df = st.session_state.parcelas.drop(columns=['Total_Mes'], errors='ignore')
         
         edited_parcelas = st.data_editor(
@@ -203,7 +213,7 @@ with right_col:
             st.session_state.parcelas = edited_parcelas
             st.rerun()
 
-# 7. PLANTA DO APARTAMENTO (Fundo da tela inteira)
+# 6. PLANTA DO APARTAMENTO
 st.write("")
 try:
     with st.expander("📐 Abrir Planta do Apartamento", expanded=False):
