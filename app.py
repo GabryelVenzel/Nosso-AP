@@ -13,8 +13,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # 2. Inicialização do estado (sessão)
-if 'Gabryel' not in st.session_state: st.session_state.gabryel = 0.0
-if 'Julia' not in st.session_state: st.session_state.julia = 0.0
+if 'gabryel' not in st.session_state: st.session_state.gabryel = 0.0
+if 'julia' not in st.session_state: st.session_state.julia = 0.0
 if 'emprestimo_pago' not in st.session_state: st.session_state.emprestimo_pago = 0.0
 
 if 'parcelas' not in st.session_state:
@@ -51,6 +51,7 @@ if 'parcelas' not in st.session_state:
             "Mês/Ano": mes_ano, 
             "Entrada Bliss (R$)": bliss, 
             "Evolução Caixa (R$)": caixa, 
+            "Outros (R$)": 0.0, # <-- NOVA COLUNA ADICIONADA AQUI
             "Paga": False
         })
     st.session_state.parcelas = pd.DataFrame(parcelas_data)
@@ -65,9 +66,9 @@ st.markdown("<h1>Nosso Apartamento 🏢</h1>", unsafe_allow_html=True)
 saldo_devedor = max(0.0, 20000.0 - st.session_state.emprestimo_pago)
 perc_devedor = min(100.0, (st.session_state.emprestimo_pago / 20000.0) * 100) if 20000.0 else 0
 
-# Cálculos Parcelas
+# Cálculos Parcelas (Agora somando a coluna 'Outros')
 df_parcelas = st.session_state.parcelas
-df_parcelas['Total_Mes'] = df_parcelas['Entrada Bliss (R$)'] + df_parcelas['Evolução Caixa (R$)']
+df_parcelas['Total_Mes'] = df_parcelas['Entrada Bliss (R$)'] + df_parcelas['Evolução Caixa (R$)'] + df_parcelas['Outros (R$)']
 valor_total_geral = df_parcelas['Total_Mes'].sum()
 
 pagas_df = df_parcelas[df_parcelas['Paga'] == True]
@@ -126,7 +127,7 @@ with right_col:
     
     with top_r1:
         with st.container(height=ALTURA_CARDS, border=True):
-            st.caption("PARCELAS (BLISS + CAIXA)")
+            st.caption("PARCELAS (BLISS + CAIXA + OUTROS)")
             st.metric("Total Pago", f"R$ {valor_total_pago:,.2f}", f"de R$ {valor_total_geral:,.2f}", delta_color="off")
             st.progress(int(perc_parcelas), text=f"{perc_parcelas:.1f}% Concluído")
             
