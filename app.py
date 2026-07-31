@@ -80,16 +80,17 @@ moveis_comprados_df = st.session_state.moveis[st.session_state.moveis["Comprado"
 total_moveis_comprados = moveis_comprados_df["Valor (R$)"].sum() if not moveis_comprados_df.empty else 0.0
 perc_moveis = (total_moveis_comprados / total_moveis_meta * 100) if total_moveis_meta > 0 else 0.0
 
-# 5. LINHA SUPERIOR (Progresso e Empréstimo)
-col1, col2, col3 = st.columns(3)
+# 5. ESTRUTURA DE COLUNAS MESTRE
+left_col, right_col = st.columns([1, 2], gap="large")
 
-with col1:
+with left_col:
+    # 1. SALDO DEVEDOR
     with st.container(border=True):
         st.caption("SALDO DEVEDOR (20K)")
         st.metric("Restante", f"R$ {saldo_devedor:,.2f}")
         st.progress(int(perc_devedor), text=f"{perc_devedor:.0f}% Pago")
         
-    # Abater Empréstimo alinhado abaixo do Saldo Devedor
+    # 2. ABATER EMPRÉSTIMO
     with st.container(border=True):
         st.subheader("Abater Empréstimo", anchor=False)
         st.caption("Abate dos R$ 20.000,00 iniciais.")
@@ -99,27 +100,9 @@ with col1:
             st.session_state.emprestimo_pago = min(20000.0, st.session_state.emprestimo_pago + abater)
             st.rerun()
 
-with col2:
+    # 3. LISTA DE MÓVEIS
     with st.container(border=True):
-        st.caption("PARCELAS AP (BLISS + CAIXA)")
-        st.metric("Total Pago", f"R$ {valor_total_pago:,.2f}", f"de R$ {valor_total_geral:,.2f}", delta_color="off")
-        st.progress(int(perc_parcelas), text=f"{perc_parcelas:.1f}% Concluído")
-
-with col3:
-    with st.container(border=True):
-        st.caption(f"MÓVEIS E DECORAÇÃO")
-        st.metric("Comprados", f"R$ {total_moveis_comprados:,.2f}", f"Meta: R$ {total_moveis_meta:,.2f}", delta_color="off")
-        st.progress(int(perc_moveis), text=f"{perc_moveis:.0f}% Adquirido")
-
-st.write("") # Espaçamento
-
-# 6. LINHA INFERIOR (Móveis, Reservas e Tabela)
-left_col, right_col = st.columns([1, 1.8], gap="large")
-
-with left_col:
-    # CARTÃO: MÓVEIS (Movido para a esquerda)
-    with st.container(border=True):
-        st.subheader("Lista de Móveis e Decoração", anchor=False)
+        st.subheader("Móveis e Decoração", anchor=False)
         with st.form("form_moveis", border=False):
             nome_item = st.text_input("Nome do Item", placeholder="Ex: Geladeira")
             c_val, c_btn = st.columns([2, 1])
@@ -145,30 +128,44 @@ with left_col:
                 st.rerun()
 
 with right_col:
-    c_reserva, c_tabela = st.columns([1, 1.5])
-    
-    with c_reserva:
-        # CARTÃO: GESTÃO DE RESERVAS (Movido para a direita)
+    # 4. PROGRESSO PARCELAS E MÓVEIS (Topo da direita)
+    top_r1, top_r2 = st.columns(2)
+    with top_r1:
         with st.container(border=True):
-            st.subheader("Gestão de Reservas", anchor=False)
-            total_casal = st.session_state.gabryel + st.session_state.julia
+            st.caption("PARCELAS AP (BLISS + CAIXA)")
+            st.metric("Total Pago", f"R$ {valor_total_pago:,.2f}", f"de R$ {valor_total_geral:,.2f}", delta_color="off")
+            st.progress(int(perc_parcelas), text=f"{perc_parcelas:.1f}% Concluído")
+    with top_r2:
+        with st.container(border=True):
+            st.caption(f"META DE MÓVEIS")
+            st.metric("Comprados", f"R$ {total_moveis_comprados:,.2f}", f"Meta: R$ {total_moveis_meta:,.2f}", delta_color="off")
+            st.progress(int(perc_moveis), text=f"{perc_moveis:.0f}% Adquirido")
+
+    # 5. GESTÃO DE RESERVAS (Horizontal e alinhada à tabela)
+    with st.container(border=True):
+        st.subheader("Gestão de Reservas", anchor=False)
+        total_casal = st.session_state.gabryel + st.session_state.julia
+        
+        # Cálculo exato de meses de cobertura
+        df_nao_pagas = df_parcelas[df_parcelas['Paga'] == False]
+        saldo_restante = total_casal
+        meses_cobertura = 0
+        
+        for _, row in df_nao_pagas.iterrows():
+            custo_mes = row['Total_Mes']
+            if custo_mes > 0 and saldo_restante >= custo_mes:
+                saldo_restante -= custo_mes
+                meses_cobertura += 1
+            else:
+                break
+        
+        # Estrutura Horizontal
+        col_res1, col_res2, col_res3 = st.columns([1, 1, 1])
+        
+        with col_res1:
+            st.info(f"**Saldo Total:** R$ {total_casal:,.2f}\n\n**Cobertura:** {meses_cobertura} meses")
             
-            # Cálculo exato de meses de cobertura
-            df_nao_pagas = df_parcelas[df_parcelas['Paga'] == False]
-            saldo_restante = total_casal
-            meses_cobertura = 0
-            
-            for _, row in df_nao_pagas.iterrows():
-                custo_mes = row['Total_Mes']
-                if custo_mes > 0 and saldo_restante >= custo_mes:
-                    saldo_restante -= custo_mes
-                    meses_cobertura += 1
-                else:
-                    break
-            
-            st.info(f"**Saldo:** R$ {total_casal:,.2f}\n\n**Cobertura:** {meses_cobertura} meses inteiros")
-            st.divider()
-            
+        with col_res2:
             st.write("**👦🏻 Gabryel**")
             st.metric("Saldo", f"R$ {st.session_state.gabryel:,.2f}", label_visibility="collapsed")
             cg1, cg2, cg3 = st.columns([2, 1, 1])
@@ -178,6 +175,7 @@ with right_col:
             if cg3.button("➖", key="sub_g", use_container_width=True): 
                 st.session_state.gabryel = max(0.0, st.session_state.gabryel - novo_valor_g); st.rerun()
 
+        with col_res3:
             st.write("**👸🏻 Júlia**")
             st.metric("Saldo", f"R$ {st.session_state.julia:,.2f}", label_visibility="collapsed")
             cj1, cj2, cj3 = st.columns([2, 1, 1])
@@ -187,26 +185,25 @@ with right_col:
             if cj3.button("➖", key="sub_j", use_container_width=True): 
                 st.session_state.julia = max(0.0, st.session_state.julia - novo_valor_j); st.rerun()
 
-    with c_tabela:
-        # CARTÃO: CRONOGRAMA
-        with st.container(border=True):
-            st.subheader("Cronograma Conjunto", anchor=False)
-            st.caption("Edite os valores livremente se houver reajuste.")
-            # Drop the calculation column before showing to user, it recalculates automatically
-            display_df = st.session_state.parcelas.drop(columns=['Total_Mes'], errors='ignore')
-            
-            edited_parcelas = st.data_editor(
-                display_df,
-                hide_index=True,
-                use_container_width=True,
-                disabled=["Mês/Ano"], 
-                height=450
-            )
-            if not edited_parcelas.equals(display_df):
-                st.session_state.parcelas = edited_parcelas
-                st.rerun()
+    # 6. CRONOGRAMA CONJUNTO (Mesma largura de Gestão de Reservas)
+    with st.container(border=True):
+        st.subheader("Cronograma Conjunto", anchor=False)
+        st.caption("A cobertura de meses na Gestão de Reservas é calculada automaticamente baseada nos valores em aberto desta tabela.")
+        # Drop the calculation column before showing to user, it recalculates automatically
+        display_df = st.session_state.parcelas.drop(columns=['Total_Mes'], errors='ignore')
+        
+        edited_parcelas = st.data_editor(
+            display_df,
+            hide_index=True,
+            use_container_width=True,
+            disabled=["Mês/Ano"], 
+            height=400
+        )
+        if not edited_parcelas.equals(display_df):
+            st.session_state.parcelas = edited_parcelas
+            st.rerun()
 
-# 7. PLANTA DO APARTAMENTO (Fundo da tela)
+# 7. PLANTA DO APARTAMENTO (Fundo da tela inteira)
 st.write("")
 try:
     with st.expander("📐 Abrir Planta do Apartamento", expanded=False):
