@@ -26,8 +26,9 @@ def salvar_nuvem():
     except Exception as e:
         st.error(f"Erro ao salvar na nuvem: {e}")
 
-# 1. Configuração da página
+# 1. Configuração da página e CSS Customizado
 st.set_page_config(page_title="Te Amo Muito - Nosso AP", layout="wide", initial_sidebar_state="collapsed")
+
 st.markdown("""
     <style>
     .block-container { padding-top: 2rem; padding-bottom: 2rem; }
@@ -88,7 +89,7 @@ if 'dados_carregados' not in st.session_state:
             
         st.session_state.dados_carregados = True
     except Exception as e:
-        st.error(f"Erro ao conectar com o banco de dados. Tentando carregar localmente... Erro: {e}")
+        st.error(f"Erro ao conectar com o banco de dados. Verifique suas chaves. Erro: {e}")
 
 # 3. Cabeçalho
 st.markdown("<h1>Nosso Apartamento 🏢</h1>", unsafe_allow_html=True)
@@ -116,59 +117,28 @@ perc_moveis = (total_moveis_comprados / total_moveis_meta * 100) if total_moveis
 
 ALTURA_CARDS = 245 
 
-# 5. ESTRUTURA DE COLUNAS
-left_col, right_col = st.columns([2, 1], gap="large")
+# 5. ESTRUTURA DE COLUNAS (2.5 para a esquerda ficar bem larga, 1 para a direita ficar estreita)
+left_col, right_col = st.columns([2.5, 1], gap="large")
 
 with left_col:
-    with st.container(height=ALTURA_CARDS, border=True):
-        st.caption(f"META DE MÓVEIS")
-        st.metric("Comprados", f"R$ {total_moveis_comprados:,.2f}", f"Meta: R$ {total_moveis_meta:,.2f}", delta_color="off")
-        st.progress(int(perc_moveis), text=f"{perc_moveis:.0f}% Adquirido")
-        
-    with st.container(border=True):
-        st.subheader("Móveis e Decoração", anchor=False)
-        with st.form("form_moveis", border=False):
-            nome_item = st.text_input("Nome do Item", placeholder="Ex: Geladeira")
-            c_val, c_btn = st.columns([2, 1])
-            valor_item = c_val.number_input("Valor Est. R$", min_value=0.0, step=50.0)
-            st.markdown("""<style> .stFormSubmitButton { margin-top: 1.75rem; } </style>""", unsafe_allow_html=True)
-            submitted = c_btn.form_submit_button("Adicionar", use_container_width=True)
-            
-            if submitted and nome_item:
-                novo_item = pd.DataFrame([{"Item": nome_item, "Valor (R$)": valor_item, "Comprado": False}])
-                st.session_state.moveis = pd.concat([st.session_state.moveis, novo_item], ignore_index=True)
-                salvar_nuvem()
-                st.rerun()
-                
-        if not st.session_state.moveis.empty:
-            edited_moveis = st.data_editor(
-                st.session_state.moveis,
-                hide_index=True,
-                num_rows="dynamic",
-                use_container_width=True,
-                height=300
-            )
-            if not edited_moveis.equals(st.session_state.moveis):
-                st.session_state.moveis = edited_moveis
-                salvar_nuvem()
-                st.rerun()
-
-with right_col:
-    top_r1, top_r2 = st.columns(2)
+    # 1. PROGRESSO PARCELAS E SALDO DEVEDOR COMBINADO (Esquerda)
+    top_l1, top_l2 = st.columns(2)
     
-    with top_r1:
+    with top_l1:
         with st.container(height=ALTURA_CARDS, border=True):
             st.caption("PARCELAS (BLISS + CAIXA + OUTROS)")
             st.metric("Total Pago", f"R$ {valor_total_pago:,.2f}", f"de R$ {valor_total_geral:,.2f}", delta_color="off")
             st.progress(int(perc_parcelas), text=f"{perc_parcelas:.1f}% Concluído")
             
-    with top_r2:
+    with top_l2:
+        # Saldo Devedor e Abater Juntos
         with st.container(height=ALTURA_CARDS, border=True):
             st.caption("EMPRÉSTIMO ENTRADA (20 MIL REAIS)")
             st.metric("Restante", f"R$ {saldo_devedor:,.2f}")
             st.progress(int(perc_devedor), text=f"{perc_devedor:.0f}% Pago")
             
-            st.divider() 
+            st.divider() # Linha divisória fina
+            
             ca1, ca2 = st.columns([2, 1])
             abater = ca1.number_input("Abater valor R$", min_value=0.0, step=100.0, label_visibility="collapsed", placeholder="Valor R$")
             if ca2.button("Lançar", use_container_width=True, type="primary"):
@@ -176,10 +146,12 @@ with right_col:
                 salvar_nuvem()
                 st.rerun()
 
+    # 2. GESTÃO DE RESERVAS (Esquerda)
     with st.container(border=True):
         st.subheader("Gestão de Reservas", anchor=False)
         total_casal = st.session_state.gabryel + st.session_state.julia
         
+        # Cálculo exato de meses de cobertura
         df_nao_pagas = df_parcelas[df_parcelas['Paga'] == False]
         saldo_restante = total_casal
         meses_cobertura = 0
@@ -192,14 +164,20 @@ with right_col:
             else:
                 break
         
+        # Estrutura Horizontal
         col_res1, col_res2, col_res3 = st.columns([1.2, 1, 1], gap="medium")
         
         with col_res1:
+            # Destaque customizado para o Saldo e Meses
             st.markdown(f"""
                 <div style="background-color: rgba(2, 132, 199, 0.1); padding: 20px; border-radius: 12px; text-align: center; border: 1px solid rgba(2, 132, 199, 0.2); height: 100%; display: flex; flex-direction: column; justify-content: center;">
                     <p style="margin: 0; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; color: #475569;">Saldo Total</p>
                     <h1 style="margin: 5px 0; color: #0284c7; font-size: 2.2rem; line-height: 1;">R$ {total_casal:,.2f}</h1>
-                    <div><span style="background-color: #0284c7; color: white; padding: 4px 14px; border-radius: 20px; font-size: 0.95rem; font-weight: bold; display: inline-block; margin-top: 8px;">{meses_cobertura} meses seguros</span></div>
+                    <div>
+                        <span style="background-color: #0284c7; color: white; padding: 4px 14px; border-radius: 20px; font-size: 0.95rem; font-weight: bold; display: inline-block; margin-top: 8px;">
+                            {meses_cobertura} meses seguros
+                        </span>
+                    </div>
                 </div>
             """, unsafe_allow_html=True)
             
@@ -223,6 +201,7 @@ with right_col:
             if cj3.button("➖", key="sub_j", use_container_width=True): 
                 st.session_state.julia = max(0.0, st.session_state.julia - novo_valor_j); salvar_nuvem(); st.rerun()
 
+    # 3. CRONOGRAMA CONJUNTO (Esquerda)
     with st.container(border=True):
         st.subheader("Cronograma de Pagamentos", anchor=False)
         st.caption("A cobertura de meses na Gestão de Reservas é calculada automaticamente baseada nos valores em aberto desta tabela.")
@@ -239,6 +218,42 @@ with right_col:
             st.session_state.parcelas = edited_parcelas
             salvar_nuvem()
             st.rerun()
+
+with right_col:
+    # 4. MÓVEIS (Progresso movido para a estrema direita)
+    with st.container(height=ALTURA_CARDS, border=True):
+        st.caption(f"META DE MÓVEIS")
+        st.metric("Comprados", f"R$ {total_moveis_comprados:,.2f}", f"Meta: R$ {total_moveis_meta:,.2f}", delta_color="off")
+        st.progress(int(perc_moveis), text=f"{perc_moveis:.0f}% Adquirido")
+        
+    # 5. LISTA DE MÓVEIS (Estrema direita)
+    with st.container(border=True):
+        st.subheader("Móveis e Decoração", anchor=False)
+        with st.form("form_moveis", border=False):
+            nome_item = st.text_input("Nome do Item", placeholder="Ex: Geladeira")
+            c_val, c_btn = st.columns([2, 1])
+            valor_item = c_val.number_input("Valor Est. R$", min_value=0.0, step=50.0)
+            st.markdown("""<style> .stFormSubmitButton { margin-top: 1.75rem; } </style>""", unsafe_allow_html=True)
+            submitted = c_btn.form_submit_button("Adicionar", use_container_width=True)
+            
+            if submitted and nome_item:
+                novo_item = pd.DataFrame([{"Item": nome_item, "Valor (R$)": valor_item, "Comprado": False}])
+                st.session_state.moveis = pd.concat([st.session_state.moveis, novo_item], ignore_index=True)
+                salvar_nuvem()
+                st.rerun()
+                
+        if not st.session_state.moveis.empty:
+            edited_moveis = st.data_editor(
+                st.session_state.moveis,
+                hide_index=True,
+                num_rows="dynamic",
+                use_container_width=True,
+                height=550
+            )
+            if not edited_moveis.equals(st.session_state.moveis):
+                st.session_state.moveis = edited_moveis
+                salvar_nuvem()
+                st.rerun()
 
 # 6. PLANTA DO APARTAMENTO
 st.write("")
